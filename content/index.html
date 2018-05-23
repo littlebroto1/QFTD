@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="icon" href="./QFTDIcon.ico" />
+    <style>
+        * {
+            margin: 0px;
+            padding: 0px;
+            box-sizing: border-box;
+        }
+
+        #text {
+            overflow-y: auto;
+        }
+
+        header {
+            color: white;
+            height: 38px;
+            background: linear-gradient(to top left,rgb(67, 133, 189),rgba(67, 133, 189,0.8),rgba(67, 133, 189,0.5));
+        }
+
+            header h2 {
+                text-align: center;
+                font-size: 30px;
+            }
+
+        body {
+            font-family: Arial,sans-serif;
+        }
+
+        #leftside {
+            width: 90px;
+            float: left;
+            position: fixed;
+            text-align: center;
+            height: 100%;
+            background: rgb(96, 152, 199);
+        }
+
+            #leftside p {
+                margin-top: 15px;
+                font-size: 18px;
+                color: white;
+            }
+
+        #text {
+            left: 90px;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background: rgb(154, 202, 243);
+        }
+
+        #answers input[type="radio"] {
+            margin-left: 10%;
+            transform: translate(-50%,0%);
+            margin-top: 10px;
+        }
+
+        #answers input[type="submit"] {
+            margin-left: 50%;
+            font-size: 16px;
+            transform: translate(-50%,0%);
+            margin-top: 10px;
+            border: 1px outset rgb(82, 143, 194);
+            border-radius: 4px;
+            padding: 6px;
+            background: rgb(82, 143, 194);
+            color: white;
+        }
+
+        #answers input[type="submit"], #answers input[type="radio"], #answers span {
+            cursor: pointer;
+        }
+
+        #answers {
+            padding: 3px;
+        }
+
+        .container {
+            box-shadow: 2px 2px 4px;
+            border-radius: 20px;
+            padding: 10px;
+            background: white;
+            margin-top: 40px;
+            width: 800px;
+            margin-left: 50%;
+            transform: translate(-50%);
+        }
+
+            .container h1 {
+                text-align: center;
+                font-size: 25px;
+            }
+    </style>
+</head>
+<body>
+    <header>
+        <h2>Question of the Day!</h2>
+    </header>
+    <div id="leftside">
+        <p>Hello</p>
+    </div>
+    <div id="text">
+        <div id="Questions" class="container">
+            <h1 id="question"></h1>
+            <form id="answers"></form>
+        </div>
+        <div class="container">
+            <canvas width="780"></canvas>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+        $(function () {
+            var socket = io();
+            socket.emit("page loaded");
+            socket.on("page loaded", function (data) {
+                $("#question").text(data[0]);
+                for (var i = 0; i < data[1].length; i++) {
+                    var ans = data[1][i];
+                    var input = $("<input>");
+                    input.attr("name", "answer");
+                    input.attr("type", "radio");
+                    var span = $("<span>");
+                    if (ans.type == "regular") {
+                        input.attr("value", ans.text);
+                        span.text(" " + ans.text);
+                        span.click(function (e) {
+                            $("input[value=\"" + e.currentTarget.textContent.trim() + "\"]")[0].checked = true;
+                            return false;
+                        });
+                        input.appendTo($("#answers"));
+                        span.appendTo($("#answers"));
+                        $("<br/>").appendTo($("#answers"))
+                    }
+                    else if (ans.type == "text") {
+                        input.attr("value", ans.text + ":");
+                        span.text(" " + ans.text + ": ");
+                        span.click(function (e) {
+                            $("input[value=\"" + e.currentTarget.textContent.trim() + "\"]")[0].checked = true;
+                            return false;
+                        });
+                        input.appendTo($("#answers"));
+                        span.appendTo($("#answers"));
+                        $("<input type='text' name='" + ans.text + ":'>").appendTo("#answers")
+                        $("<br/>").appendTo($("#answers"))
+                    }
+                }
+                $("<input type='submit'>").appendTo("#answers")
+                $("#answers").submit(function (e) {
+                    for (var i = 0; i < e.target.length; i++) {
+                        var input = e.target[i];
+                        if (input.checked == true) {
+                            var val = $("input[type='text'][name='" + input.value + "']").val();
+                            if (val) {
+                                socket.emit("submit", [input.value, val]);
+                            }
+                            else {
+                                socket.emit("submit", [input.value, false]);
+                            }
+                        }
+                    }
+                    return false;
+                })
+            });
+        });
+    </script>
+</body>
+</html>
